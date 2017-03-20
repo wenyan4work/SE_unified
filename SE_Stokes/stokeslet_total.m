@@ -21,6 +21,7 @@ ureal=zeros(numel(eval_idx),3);
 
 % build a extended point cloud
 xext=x;
+fext=f;
 for a=-1:1
     for b=-1:1
         for c=-1:1
@@ -28,6 +29,7 @@ for a=-1:1
                 continue
             end
             xext=[xext;x+[a*opt.box(1),b*opt.box(2),c*opt.box(3)]];
+            fext=[fext;f];
         end
     end
 end
@@ -40,7 +42,6 @@ parfor i=1:numel(eval_idx)
     target=x(idx,:);
     ureal(i,:)=-f(idx,:)*4*xi/sqrt(pi);
 
-    
     % find neighbor
     nbId=findNeighborsInRadius(pcloud,target,0.5);
     [M,~]=size(nbId);
@@ -50,7 +51,7 @@ parfor i=1:numel(eval_idx)
         if (norm(rvec)<1e-13)
             continue;
         end
-        ureal(i,:)=ureal(i,:)+f(idx,:)*AEW(xi,rvec);
+        ureal(i,:)=ureal(i,:)+fext(nbId(j),:)*AEW(xi,rvec);
     end
 end 
 
