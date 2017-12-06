@@ -3,7 +3,7 @@ project(MEX)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
-  ${PROJECT_SOURCE_DIR}/cmake)
+  ${PROJECT_SOURCE_DIR}/cmake-compat)
 
 if(CMAKE_VERSION VERSION_LESS "3.3") 
   message(WARNING "CMake version less than 3.3\n"
@@ -24,11 +24,34 @@ include_directories(
   ${Matlab_INCLUDE_DIRS}
 )
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/")
+find_package(GSL REQUIRED)
+if(NOT GSL_FOUND)
+  message(FATAL_ERROR "GSL not found.")
+else()
+  message("GSL found.")
+endif()
 
-# Assuming gcc for now
-# -ffast-math is for some reason not working with gcc
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99 -Wall -O3 -march=native -fopenmp")
+find_package(MKL)
+if(MKL_FOUND)
+  include_directories(
+    ${MKL_INCLUDE_DIR}
+    )
+
+  link_directories(
+    ${MKL_LIBRARY}
+    )
+endif()
+
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # Assuming gcc for now
+  # -ffast-math is for some reason not working with gcc
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99 -Wall -O3 -march=native -fopenmp")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall -O3 -ipo -fast -std=c99 -march=native -openmp")
+endif()
+ 
 
 # Add modules with MEX to be built
 add_subdirectory("${PROJECT_SOURCE_DIR}/SE_direct")
@@ -38,6 +61,8 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/SE_Stokes/mex")
 add_subdirectory("${PROJECT_SOURCE_DIR}/SE_Stresslet/mex")
 add_subdirectory("${PROJECT_SOURCE_DIR}/SE_Rotlet/mex")
 add_subdirectory("${PROJECT_SOURCE_DIR}/SE2P_Stokes/mex")
+add_subdirectory("${PROJECT_SOURCE_DIR}/SE1P/mex")
+add_subdirectory("${PROJECT_SOURCE_DIR}/SE0P/mex")
 
 # Enable running Matlab test suite through ctest
 enable_testing()
